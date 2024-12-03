@@ -164,7 +164,8 @@ class FileServer(Resource, aiocoap.interfaces.ObservableResource):
         except FileNotFoundError:
             raise NoSuchFile()
 
-        etag = self.hash_stat(st)
+        if self.etag_length:
+            etag = self.hash_stat(st)
 
         if etag and etag in request.opt.etags:
             response = aiocoap.Message(code=codes.VALID)
