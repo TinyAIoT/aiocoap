@@ -70,6 +70,34 @@ class BlockResource(resource.Resource):
         self.set_content(request.payload)
         return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
 
+class ImageReceiveResource(resource.Resource):
+    """Example resource which supports PUT methods. It sends large
+    responses, which trigger blockwise transfer."""
+
+    def __init__(self):
+        super().__init__()
+        self.set_content(
+            b"This is the default content of ImageReceiveResource\n"
+        )
+
+    def set_content(self, content):
+        self.content = content
+
+    async def render_put(self, request):
+        print("PUT payload received")
+        image_data = request.payload
+
+        # Generate a unique filename using timestamp
+        filename = datetime.now().strftime("received_image_%Y%m%d_%H%M%S.jpg")
+
+        # Write the image data to a file in the current directory
+        with open(filename, "wb") as image_file:
+            image_file.write(image_data)
+
+        # Log success message
+        print(f"Image saved as {filename}")
+        self.set_content(f"Image saved as {filename}")
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
 
 class SeparateLargeResource(resource.Resource):
     """Example resource which supports the GET method. It uses asyncio.sleep to
@@ -157,6 +185,7 @@ async def main():
     )
     root.add_resource([], Welcome())
     root.add_resource(["time"], TimeResource())
+    root.add_resource(["image"], ImageReceiveResource())
     root.add_resource(["other", "block"], BlockResource())
     root.add_resource(["other", "separate"], SeparateLargeResource())
     root.add_resource(["whoami"], WhoAmI())
