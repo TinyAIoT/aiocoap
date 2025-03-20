@@ -394,6 +394,8 @@ async def single_request(args, context, globalopts=None):
     if options.pretty_print is None:
         options.pretty_print = sys.stdout.isatty() and not pretty_print_modules
 
+    configure_logging((options.verbose or 0) - (options.quiet or 0), options.color)
+
     try:
         try:
             code = getattr(
