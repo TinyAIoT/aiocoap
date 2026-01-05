@@ -10,7 +10,7 @@ for some more information."""
 
 import datetime
 import logging
-
+import datetime
 import asyncio
 
 import aiocoap.resource as resource
@@ -82,13 +82,17 @@ class ImageReceiveResource(resource.Resource):
 
     def set_content(self, content):
         self.content = content
-
+    
+    async def render_get(self,request):
+        print("PUT payload received")
+        
     async def render_put(self, request):
         print("PUT payload received")
         image_data = request.payload
 
         # Generate a unique filename using timestamp
-        filename = datetime.now().strftime("received_image_%Y%m%d_%H%M%S.jpg")
+        time = datetime.datetime.now().strftime("%Y-%m-%d%H:%M")
+        filename = "received_image_" + time + ".jpg"
 
         # Write the image data to a file in the current directory
         with open(filename, "wb") as image_file:
@@ -97,7 +101,25 @@ class ImageReceiveResource(resource.Resource):
         # Log success message
         print(f"Image saved as {filename}")
         self.set_content(f"Image saved as {filename}")
-        return aiocoap.Message(code=aiocoap.CREATED)
+        return aiocoap.Message(code=aiocoap.CREATED, payload=b'200')
+    
+    async def render_post(self, request):
+        print("POST payload received")
+        print(request)
+        image_data = request.payload
+
+        # Generate a unique filename using timestamp
+        filename = datetime.datetime.now().strftime("received_image_%Y%m%d_%H%M%S.jpg")
+
+        # Write the image data to a file in the current directory
+        with open(filename, "wb") as image_file:
+            image_file.write(image_data)
+
+        # Log success message
+        # self.set_content("Image saved!")
+        self.set_content(f"Image saved as {filename}")
+        print(f"Image saved as {filename}")
+        return aiocoap.Message(code=200, payload=b'200')
 
 class SoundReceiveResource(resource.Resource):
     """Example resource which supports PUT methods. It sends large
@@ -127,7 +149,7 @@ class SoundReceiveResource(resource.Resource):
         # Log success message
         print(f"Sound saved as {filename}")
         self.set_content(f"Sound saved as {filename}")
-        return aiocoap.Message(code=aiocoap.CREATED)
+        return aiocoap.Message(code=aiocoap.CREATED, payload=b'200')
 
 class ClassReceiveResource(resource.Resource):
     """Example resource which supports PUT methods. It sends large
@@ -148,7 +170,7 @@ class ClassReceiveResource(resource.Resource):
 
         # Generate a unique filename using timestamp
         time = datetime.datetime.now().strftime("%Y-%m-%d%H:%M")
-        filename = "received_class_" + time + ".wav"
+        filename = "received_class_" + time + ".csv"
 
         # Write the image data to a file in the current directory
         with open(filename, "wb") as class_file:
@@ -157,7 +179,7 @@ class ClassReceiveResource(resource.Resource):
         # Log success message
         print(f"Class saved as {filename}")
         self.set_content(f"Class saved as {filename}")
-        return aiocoap.Message(code=aiocoap.CREATED)
+        return aiocoap.Message(code=aiocoap.CREATED, payload=b'200')
 
 class SeparateLargeResource(resource.Resource):
     """Example resource which supports the GET method. It uses asyncio.sleep to
