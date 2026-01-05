@@ -97,7 +97,7 @@ class ImageReceiveResource(resource.Resource):
         # Log success message
         print(f"Image saved as {filename}")
         self.set_content(f"Image saved as {filename}")
-        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+        return aiocoap.Message(code=aiocoap.CREATED)
 
 class SoundReceiveResource(resource.Resource):
     """Example resource which supports PUT methods. It sends large
@@ -117,7 +117,8 @@ class SoundReceiveResource(resource.Resource):
         sound_data = request.payload
 
         # Generate a unique filename using timestamp
-        filename = datetime.now().strftime("received_sound_%Y%m%d_%H%M%S.wav")
+        time = datetime.datetime.now().strftime("%Y-%m-%d%H:%M")
+        filename = "received_sound_" + time + ".wav"
 
         # Write the image data to a file in the current directory
         with open(filename, "wb") as image_file:
@@ -126,7 +127,7 @@ class SoundReceiveResource(resource.Resource):
         # Log success message
         print(f"Sound saved as {filename}")
         self.set_content(f"Sound saved as {filename}")
-        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+        return aiocoap.Message(code=aiocoap.CREATED)
 
 class ClassReceiveResource(resource.Resource):
     """Example resource which supports PUT methods. It sends large
@@ -146,7 +147,8 @@ class ClassReceiveResource(resource.Resource):
         class_data = request.payload
 
         # Generate a unique filename using timestamp
-        filename = datetime.now().strftime("received_class_%Y%m%d_%H%M%S.wav")
+        time = datetime.datetime.now().strftime("%Y-%m-%d%H:%M")
+        filename = "received_class_" + time + ".wav"
 
         # Write the image data to a file in the current directory
         with open(filename, "wb") as class_file:
@@ -155,7 +157,7 @@ class ClassReceiveResource(resource.Resource):
         # Log success message
         print(f"Class saved as {filename}")
         self.set_content(f"Class saved as {filename}")
-        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+        return aiocoap.Message(code=aiocoap.CREATED)
 
 class SeparateLargeResource(resource.Resource):
     """Example resource which supports the GET method. It uses asyncio.sleep to
