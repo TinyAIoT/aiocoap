@@ -99,6 +99,64 @@ class ImageReceiveResource(resource.Resource):
         self.set_content(f"Image saved as {filename}")
         return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
 
+class SoundReceiveResource(resource.Resource):
+    """Example resource which supports PUT methods. It sends large
+    responses, which trigger blockwise transfer."""
+
+    def __init__(self):
+        super().__init__()
+        self.set_content(
+            b"This is the default content of SoundReceiveResource\n"
+        )
+
+    def set_content(self, content):
+        self.content = content
+
+    async def render_put(self, request):
+        print("PUT payload received")
+        sound_data = request.payload
+
+        # Generate a unique filename using timestamp
+        filename = datetime.now().strftime("received_sound_%Y%m%d_%H%M%S.wav")
+
+        # Write the image data to a file in the current directory
+        with open(filename, "wb") as image_file:
+            image_file.write(sound_data)
+
+        # Log success message
+        print(f"Sound saved as {filename}")
+        self.set_content(f"Sound saved as {filename}")
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+
+class ClassReceiveResource(resource.Resource):
+    """Example resource which supports PUT methods. It sends large
+    responses, which trigger blockwise transfer."""
+
+    def __init__(self):
+        super().__init__()
+        self.set_content(
+            b"This is the default content of ClassReceiveResource\n"
+        )
+
+    def set_content(self, content):
+        self.content = content
+
+    async def render_put(self, request):
+        print("PUT payload received")
+        class_data = request.payload
+
+        # Generate a unique filename using timestamp
+        filename = datetime.now().strftime("received_class_%Y%m%d_%H%M%S.wav")
+
+        # Write the image data to a file in the current directory
+        with open(filename, "wb") as class_file:
+            class_file.write(class_data)
+
+        # Log success message
+        print(f"Class saved as {filename}")
+        self.set_content(f"Class saved as {filename}")
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=self.content)
+
 class SeparateLargeResource(resource.Resource):
     """Example resource which supports the GET method. It uses asyncio.sleep to
     simulate a long-running operation, and thus forces the protocol to send
@@ -186,6 +244,8 @@ async def main():
     root.add_resource([], Welcome())
     root.add_resource(["time"], TimeResource())
     root.add_resource(["image"], ImageReceiveResource())
+    root.add_resource(["class"], ClassReceiveResource())
+    root.add_resource(["sound"], SoundReceiveResource())
     root.add_resource(["other", "block"], BlockResource())
     root.add_resource(["other", "separate"], SeparateLargeResource())
     root.add_resource(["whoami"], WhoAmI())
