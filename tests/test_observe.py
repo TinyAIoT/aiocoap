@@ -21,9 +21,8 @@ from .test_server import (
     no_warnings,
     ReplacingResource,
     MultiRepresentationResource,
-    run_fixture_as_standalone_server,
-    asynctest,
 )
+from .common import run_fixture_as_standalone_server
 
 
 class ObservableCounter(ObservableResource):
@@ -39,7 +38,7 @@ class ObservableCounter(ObservableResource):
 
     async def render_post(self, request):
         if request.payload == b"double":
-            # Calling updated_state() twice without yielding inbetween is key
+            # Calling updated_state() twice without yielding in between is key
             # here; this ensures that Futures are not treated carelessly.
             self.count += 1
             # Triggering with explicit value because if left empty, the value
@@ -158,7 +157,6 @@ class WithObserveTestServer(WithTestServer):
 
 class TestObserve(WithObserveTestServer, WithClient):
     @no_warnings
-    @asynctest
     async def test_normal_get(self):
         request = aiocoap.Message(code=aiocoap.GET)
         request.opt.uri_path = ["deep", "count"]
@@ -166,7 +164,7 @@ class TestObserve(WithObserveTestServer, WithClient):
 
         response = await self.client.request(request).response
         self.assertEqual(
-            response.code, aiocoap.CONTENT, "Normal request did not succede"
+            response.code, aiocoap.CONTENT, "Normal request did not succeed"
         )
         self.assertEqual(
             response.payload, b"0", "Normal request gave unexpected result"
@@ -198,7 +196,6 @@ class TestObserve(WithObserveTestServer, WithClient):
         return requester, observation_results, running_task.cancel
 
     @no_warnings
-    @asynctest
     async def test_unobservable(self):
         requester, observation_results, notinterested = self.build_observer(
             ["deep", "unobservable"]
@@ -206,7 +203,7 @@ class TestObserve(WithObserveTestServer, WithClient):
 
         response = await requester.response
         self.assertEqual(
-            response.code, aiocoap.CONTENT, "Unobservable base request did not succede"
+            response.code, aiocoap.CONTENT, "Unobservable base request did not succeed"
         )
         self.assertEqual(
             response.payload, b"", "Unobservable base request gave unexpected result"
@@ -220,7 +217,6 @@ class TestObserve(WithObserveTestServer, WithClient):
         request.unresolved_remote = self.servernetloc
         await self.client.request(request).response_raising
 
-    @asynctest
     async def _test_counter(
         self, baserequest, formatter, postpayload=b"", path=["deep", "count"]
     ):
@@ -235,7 +231,7 @@ class TestObserve(WithObserveTestServer, WithClient):
 
         response = await requester.response
         self.assertEqual(
-            response.code, aiocoap.CONTENT, "Observe base request did not succede"
+            response.code, aiocoap.CONTENT, "Observe base request did not succeed"
         )
         self.assertEqual(
             response.payload,
@@ -254,20 +250,20 @@ class TestObserve(WithObserveTestServer, WithClient):
         notinterested()
 
     @no_warnings
-    def test_counter(self):
-        self._test_counter(None, lambda x: str(x).encode("ascii"))
+    async def test_counter(self):
+        await self._test_counter(None, lambda x: str(x).encode("ascii"))
 
     @no_warnings
-    def test_counter_blockwise(self):
-        self._test_counter(
+    async def test_counter_blockwise(self):
+        await self._test_counter(
             None,
             lambda x: str((" %3d" % x) * 400).encode("ascii"),
             path=["deep", "large"],
         )
 
     @no_warnings
-    def test_counter_fetch(self):
-        self._test_counter(
+    async def test_counter_fetch(self):
+        await self._test_counter(
             aiocoap.Message(code=aiocoap.FETCH, payload=b"12345"),
             lambda x: ("%s; request had length 5" % x).encode("ascii"),
         )
@@ -276,18 +272,17 @@ class TestObserve(WithObserveTestServer, WithClient):
     # also causes protocol GC issues. Tracked in
     # https://github.com/chrysn/aiocoap/issues/95
     #     @no_warnings
-    #     def test_counter_fetch_big(self):
-    #         self._test_counter(
+    #     async def test_counter_fetch_big(self):
+    #         await self._test_counter(
     #                 aiocoap.Message(code=aiocoap.FETCH, payload=b'12345' * 1000),
     #                 lambda x: ('%s; request had length 5000'%x).encode('ascii'))
 
     @no_warnings
-    def test_counter_double(self):
+    async def test_counter_double(self):
         # see comments on b"double" in render_post
-        self._test_counter(None, lambda x: str(x * 2).encode("ascii"), b"double")
+        await self._test_counter(None, lambda x: str(x * 2).encode("ascii"), b"double")
 
     @no_warnings
-    @asynctest
     async def test_echo(self):
         async def put(b):
             m = aiocoap.Message(code=aiocoap.PUT, payload=b)
@@ -303,7 +298,7 @@ class TestObserve(WithObserveTestServer, WithClient):
         )
         response = await requester.response
         self.assertEqual(
-            response.code, aiocoap.CONTENT, "Observe base request did not succede"
+            response.code, aiocoap.CONTENT, "Observe base request did not succeed"
         )
         self.assertEqual(
             response.payload,
@@ -320,7 +315,6 @@ class TestObserve(WithObserveTestServer, WithClient):
 
     @unittest.expectedFailure  # regression since 82b35c1f8f, tracked as
     @no_warnings  # https://github.com/chrysn/aiocoap/issues/104
-    @asynctest
     async def test_lingering(self):
         """Simulate what happens when a request is sent with an observe option,
         but the code only waits for the response and does not subscribe to the
@@ -342,10 +336,11 @@ class TestObserve(WithObserveTestServer, WithClient):
         self.assertWarned("Observation deleted without explicit cancellation")
 
     @no_warnings
-    @asynctest
     async def test_unknownhost(self):
         request = aiocoap.Message(
-            code=aiocoap.GET, uri="coap://cant.resolve.this.example./empty", observe=0
+            code=aiocoap.GET,
+            uri="coap://can.not.resolve.this.example./empty",
+            observe=0,
         )
         requester = self.client.request(request)
 
@@ -368,7 +363,6 @@ class TestObserve(WithObserveTestServer, WithClient):
         self.assertEqual(events, ["Error ResolutionError"])
 
     @no_warnings
-    @asynctest
     async def test_late_subscription_eventual_consistency(self):
         await self._change_counter(aiocoap.DELETE, b"")
 
@@ -399,7 +393,7 @@ class TestObserve(WithObserveTestServer, WithClient):
         # this is not required in the current implementation as it calls back
         # right from the registration, but i don't want to prescribe that.
         wait_a_moment = asyncio.get_running_loop().create_future()
-        self.loop.call_soon(lambda: wait_a_moment.set_result(None))
+        asyncio.get_event_loop().call_soon(lambda: wait_a_moment.set_result(None))
         await wait_a_moment
 
         pull_task.cancel()
@@ -424,12 +418,10 @@ class TestObserve(WithObserveTestServer, WithClient):
         return request
 
     @no_warnings
-    @asynctest
     async def test_notreally(self):
         await self._test_no_observe(["deep", "notreally"])
 
     @no_warnings
-    @asynctest
     async def test_failure(self):
         request = await self._test_no_observe(["deep", "failure"])
 

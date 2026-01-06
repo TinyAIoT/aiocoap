@@ -2,6 +2,180 @@
   :copyright: SPDX-FileCopyrightText: Christian Amsüss
   :copyright: SPDX-License-Identifier: MIT
 
+Version 0.4.17
+--------------
+
+Enhancements
+~~~~~~~~~~~~
+
+* EDHOC requests now send the CRED_BY_VALUE EAD item.
+
+  This allows use of unauthenticated servers
+  (eg. in opportunistic encryption, or when only the client needs to be authenticated)
+  when the server would only send a credential key ID by default.
+
+Compatibility
+~~~~~~~~~~~~~
+
+* aiocoap-client now accepts the ``--no-sec`` option.
+
+  This is currently a no-op, but as the defaults might change,
+  this allows future scripts to use the option also with aiocoap versions starting from now.
+
+* Tests were updated to run on released Python 3.14 images.
+
+Errors and documentation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Errors report unreachable IP versions more precisely.
+* Errors from the simple6 transport now raise ``NetworkError`` like the other transports
+  (following general documentation).
+* The ``ValueError`` from attempting to send CON messages to multicast through the udp6 trnasport
+  is now subclassed to ``ConToMulticast``,
+  and produces more useful error messages.
+* Many spelling fixes.
+
+Packaging
+~~~~~~~~~
+
+* Citation data is now provided in [citation file format](https://citation-file-format.github.io/).
+
+* ``setup.py`` was removed; this was not used any more in any workflow but providing citation data.
+
+Version 0.4.16
+--------------
+
+Enhancements
+~~~~~~~~~~~~
+
+* Messages have a ``.direction`` (incoming or outgoing); this is managed by the library.
+
+  This simplifies calls such as ``.get_request_uri()``, which works without an extra ``local_is_server=`` parameter now.
+
+* Message representation is enhanced based on direction.
+
+* The draft option Uri-Path-Abbrev is now processed by server sites.
+
+Bugfixes
+~~~~~~~~
+
+* The aiocoap-client invocation has been fixed for pip installed packages.
+* Transport tuning is now applied to the transport also for OSCORE requests.
+
+Deprecations
+~~~~~~~~~~~~
+
+* Setting the token, MID or message type (mtype, like CON or NON) in a message is deprecated.
+  The message type can now be set using transport_tuning=Reliable/Unreliable instead.
+
+  This serves to decouple CoAP's sub-layers, and prepares the addition of other transports with optional reliability.
+
+Version 0.4.15
+--------------
+
+Documentation and examples
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Jupyter examples were simplified.
+* Documentation now includes live Jupyter notebooks to facilitate live usage.
+* Fixes to the guided tour, EDHOC and OSCORE recommendations.
+* Removed obsolete information.
+
+Libraries and compatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Python 3.14 is now supported.
+* Support for gbulb was removed.
+* Tests were migrated from bespoke wrapper to using unittest's async mechanisms.
+* Use of the Lakers library was updated to 0.6.0, supporting a wider range of correct EDHOC interactions.
+
+Building and metadata
+~~~~~~~~~~~~~~~~~~~~~
+
+* Code was moved back from src/aiocoap/ to aiocoap/.
+* Examples for Android were updated and support Rust dependencies.
+* License information now correctly captures vendored BSD-3-Clause libraries.
+* Building now requires setuptools 77 or later.
+* Dependencies of extras were updated to no longer introduce unneeded or useless dependencies.
+
+Bugfixes
+~~~~~~~~
+
+* aiocoap-client now properly reports file access errors.
+* A reference cycle in WebSockets transports was resolved.
+* Various tests were fixed or added (including coverage of aiocoap-client --interactive).
+* Missing dependencies (EDHOC requires cbor-diag for loading credentials) were declared.
+
+Other
+~~~~~
+
+* Cacheable OSCORE aligned with initial working group draft.
+* Workarounds for unsupported Python versions were dropped.
+
+Version 0.4.14
+--------------
+
+This is mainly a CLI and integration update.
+
+Enhancements in aiocoap-client
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* --interactive mode now takes some arguments (eg. --proxy and --credentials) both globally and per request.
+  Options like --version were removed from inside interactive mode.
+* -v/--verbose now prints sent and received messages; add more -v to increase the log levels.
+* Sufficiently many -v now produce log messages beyond DEBUG.
+
+Dependencies
+~~~~~~~~~~~~
+
+* The websockets module is now also supported in its versions 14 and 15.
+* colorlog was added as an optional dependency in the ``[prettyprint]`` feature.
+
+Minor enhancements and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Explicit string representation of CoAP option numbers was added.
+* The repr of ContentFormat elide the encoding in the trivial case.
+* Workarounds were dropped in the contrib/html-viewer and for websockets.
+* The server example is now more explicit in its content formats.
+* Testing of doctests was restored.
+
+Version 0.4.13
+--------------
+
+Enhancements
+~~~~~~~~~~~~
+
+* Lakers was updated to 0.5, enabling
+  - a larger set of CCS credentials, and
+  - using EDHOC message 3 without the EDHOC option optimization.
+* OSCORE server contexts can now be registered at a Resource Directory, showing all resources.
+* Fileserver only sends Block2 and ETag on demand; ETag length can be configured.
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+* Group OSCORE was updated to reflect the latest draft version -23, and thus incompatible with groups on older versions.
+
+Minor enhancements
+~~~~~~~~~~~~~~~~~~
+
+* Logging of OSCORE contexts was enhanced; a tightly checked ``AIOCOAP_REVEAL_KEYS`` variable was introduced to avoid logging secrets in regular operation.
+* CLI tools now consistently support --version.
+* The DTLS test can be run as a server (like other tests).
+* Various error handling fixes, especially on the shutdown path.
+* Various documentation updates, addressing OpenSSF best practice concerns.
+* Failed CoAP transport selection now raises a ``NoRequestInterface`` error.
+* On pyodide, socket based transports are not initialized.
+  (They would have failed at runtime inside the standard library).
+* The ``ProxyForarder`` (client side proxying) is fixed to correctly send requests cross-transport.
+* The RD registrant can now use its ``link_source`` argument.
+
+Contrib
+~~~~~~~
+
+* An HTML/WASM based CoAP viewer example was added.
+
 Version 0.4.12
 --------------
 
@@ -327,7 +501,7 @@ Minor enhancements
 Internal refactoring
 ~~~~~~~~~~~~~~~~~~~~
 
-* Pipes (channels for asynchronously producing resposnes, previously called
+* Pipes (channels for asynchronously producing responses, previously called
   PlumbingResponse) are now used also for resource rendering. Block-wise and
   observation handling could thus be moved away from the core protocol and into
   the resource implementations.
@@ -408,7 +582,7 @@ Version 0.4.1
   everywhere.
 
   A Python requirement of ">= 3.6.9" was left over in the previous release's
-  metadata from earlier intermediate steps that accomodated PyPy's pre-3.7
+  metadata from earlier intermediate steps that accommodated PyPy's pre-3.7
   version.
 
 Version 0.4
@@ -493,7 +667,7 @@ Dependencies
 Portability
 ~~~~~~~~~~~
 
-* Several small adjustments were made to accomodate execution on Windows.
+* Several small adjustments were made to accommodate execution on Windows.
 * FreeBSD was added to the list of supported systems (without any need for changes).
 
 Fixes possibly breaking applications
@@ -553,7 +727,7 @@ Portability
 * All uses of SO_REUSEPORT were changed to SO_REUSEADDR, as REUSEPORT is
   considered dangerous by some and removed from newer Python versions.
 
-  On platoforms without support for that option, it is not set. Automatic
+  On platforms without support for that option, it is not set. Automatic
   load-balancing by running parallel servers is not supported there.
 
 * The udp6 module is now usable on platforms without MSG_ERRQUEUE (ie. anything
@@ -674,7 +848,7 @@ Breaking changes
 
 * 17d1de5a: Handling of the various components of a remote was unified into the
   .remote property of messages. If you were previously setting unresolved
-  addresses or even a tuple-based remote manualy, please set them using the
+  addresses or even a tuple-based remote manually, please set them using the
   ``uri`` pseudo-option now.
 
 * 47863a29: Re-raise transport specific errors as aiocoap errors as
@@ -844,7 +1018,7 @@ Possibly breaking changes
 * ab5b88a: Site nesting means that server resources do not get their original
   Uri-Path any more
 * bc76a7c: Location-{Path,Query} were opaque (bytes) objects instead of
-  strings; disctinction between accidental and intentional opaque options is
+  strings; distinction between accidental and intentional opaque options is
   now clarified
 
 Small features

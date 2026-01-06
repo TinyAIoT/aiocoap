@@ -13,7 +13,7 @@ import aiocoap
 import aiocoap.defaults
 from aiocoap.util import hostportjoin
 
-from .test_server import WithAsyncLoop, WithClient, asynctest
+from .test_server import WithClient
 from .fixtures import is_test_successful
 
 from .common import PYTHON_PREFIX, CapturingSubprocess
@@ -34,6 +34,11 @@ debug_whitelist = [
     "INFO:coap-server:Render request raised a renderable error",
     "DEBUG:oscore-site:Will encrypt message as response: ",
     "DEBUG:aiocoap.cryptography:Unprotecting failed",
+    # When hunting down warnings issued by coverage, coverage can be run with
+    # --debug=trace, and then those pop up all over the place and include
+    # module names such as warning or error.
+    "falls outside the --source spec",
+    "Tracing '/home/",
 ]
 
 
@@ -47,16 +52,16 @@ class WithAssertNofaillines(unittest.TestCase):
         successfully report: 'Check passed: The validation failed. (Tag
         invalid)'"""
 
-        lines = text_to_check.decode("utf8").split("\n")
+        decoded = text_to_check.decode("utf8")
         lines = (
             l
             # "failed" and "error" are always legitimate in this position
-            # as they happen by design; whereever they are unexpected,
+            # as they happen by design; wherever they are unexpected,
             # they're caught by the regular plug test operation
             .replace("Precondition Failed", "Precondition @@@led").replace(
                 "Internal Server Error", "Internal Server @@@or"
             )
-            for l in lines
+            for l in decoded.split("\n")
         )
         lines = (
             l
@@ -64,12 +69,20 @@ class WithAssertNofaillines(unittest.TestCase):
             if not any(l.startswith(white) for white in output_whitelist)
         )
         lines = (l for l in lines if not any(white in l for white in debug_whitelist))
-        errorlines = (
+        errorlines = [
             l
             for l in lines
             if "fail" in l.lower() or "warning" in l.lower() or "error" in l.lower()
+        ]
+        self.assertEqual(
+            [],
+            list(errorlines),
+            message
+            + "\nFirst offender: "
+            + (errorlines + ["(none)"])[0]
+            + "\nFull text:\n"
+            + decoded,
         )
-        self.assertEqual([], list(errorlines), message)
 
 
 @unittest.skipIf(
@@ -77,24 +90,26 @@ class WithAssertNofaillines(unittest.TestCase):
     "Module missing for running OSCORE tests: %s"
     % (aiocoap.defaults.oscore_missing_modules(),),
 )
-class WithPlugtestServer(WithAsyncLoop, WithAssertNofaillines):
-    def setUp(self):
-        super(WithPlugtestServer, self).setUp()
-        ready = self.loop.create_future()
-        self.__done = self.loop.create_future()
+class WithPlugtestServer(WithAssertNofaillines):
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
+        ready = asyncio.get_event_loop().create_future()
+        self.__done = asyncio.get_event_loop().create_future()
 
         self.contextdir = tempfile.mkdtemp(suffix="-contexts")
 
-        self.__task = self.loop.create_task(self.run_server(ready, self.__done))
+        self.__task = asyncio.get_event_loop().create_task(
+            self.run_server(ready, self.__done)
+        )
         self.__task.add_done_callback(
             lambda _: None
             if ready.done()
             else ready.set_exception(self.__task.exception())
         )
-        self.loop.run_until_complete(ready)
+        await ready
 
     async def run_server(self, readiness, done):
-        self.process, process_outputs = await self.loop.subprocess_exec(
+        self.process, process_outputs = await asyncio.get_event_loop().subprocess_exec(
             CapturingSubprocess, *self.SERVER, self.contextdir + "/server", stdin=None
         )
         try:
@@ -125,13 +140,13 @@ class WithPlugtestServer(WithAsyncLoop, WithAssertNofaillines):
         finally:
             self.process.close()
 
-    def tearDown(self):
+    async def asyncTearDown(self):
         # Don't leave this over, even if anything is raised during teardown
         self.process.terminate()
 
-        super().tearDown()
+        await super().asyncTearDown()
 
-        out, err = self.loop.run_until_complete(self.__done)
+        out, err = await self.__done
 
         if not is_test_successful(self):
             if not out and not err:
@@ -161,9 +176,8 @@ class WithPlugtestServer(WithAsyncLoop, WithAssertNofaillines):
 
 
 class TestOSCOREPlugtestBase(WithPlugtestServer, WithClient, WithAssertNofaillines):
-    @asynctest
     async def _test_plugtestclient(self, x):
-        proc, transport = await self.loop.subprocess_exec(
+        proc, transport = await asyncio.get_event_loop().subprocess_exec(
             CapturingSubprocess,
             *(
                 CLIENT
@@ -208,13 +222,17 @@ class TestOSCOREPlugtestWithRecovery(TestOSCOREPlugtestBase):
 
 for x in range(0, 17):
     for cls in (TestOSCOREPlugtestWithRecovery, TestOSCOREPlugtestWithoutRecovery):
-        t = lambda self, x=x: self._test_plugtestclient(x)
+
+        async def t(self, x=x):
+            await self._test_plugtestclient(x)
+
         if x == 16:
-            # That test can not succeed against a regular plugtest server
+            # That test can not succeed against a regular plugtest server: It
+            # is about sending an OSCORE message to a non-OSCORE server.
             t = unittest.expectedFailure(t)
         if x == 7:
             # That test fails because there is no proper observation cancellation
-            # aroun yet, see https://github.com/chrysn/aiocoap/issues/104
+            # around yet, see https://github.com/chrysn/aiocoap/issues/104
             #
             # Not making a statement on whether this is ecpected to work or
             # not, because it is highly irregular (it works with setup.py test

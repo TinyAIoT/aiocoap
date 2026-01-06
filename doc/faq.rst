@@ -10,8 +10,8 @@ while it is not clear where to better put them).
 
 * **Which platforms are supported?**
 
-  aiocoap requires Python 3.10
-  (or PyPy 3.10),
+  aiocoap requires Python 3.11
+  (or PyPy 3.11),
   and should run on all operating systems supported by Python.
 
   Development and automated tests run on Linux, and this is where all listed features are supported.
@@ -29,7 +29,7 @@ while it is not clear where to better put them).
   aiocoap is agnostic of the backing asyncio implementation
   as long as it implements the functionality required by the transport
   (``add_reader`` for udp6, ``sockname`` extra for role reversal on simple6).
-  It is known to work with uvloop_ and gbulb_.
+  It is known to work with uvloop_ and gobject_.
 
   When aiocoap is used with pyodide_
   (that is, in a web browser, with a Python interpreter compiled through emscripten),
@@ -39,9 +39,9 @@ while it is not clear where to better put them).
   in the :mod:`WebSockets transport<aiocoap.transports.ws>`.
 
 .. _uvloop: https://uvloop.readthedocs.io/
-.. _gbulb: https://github.com/nathan-hoad/gbulb
+.. _gobject: https://pygobject.gnome.org/guide/asynchronous.html
 .. _pyodide: https://pyodide.org/
-.. _`Jupyter notebook`: https://jupyter.org/try-jupyter/lab/
+.. _`Jupyter notebook`: https://jupyterlite-pyodide-kernel.readthedocs.io/en/latest/_static/lab/
 
 * **How can a server be scaled up to use multiple cores?**
 

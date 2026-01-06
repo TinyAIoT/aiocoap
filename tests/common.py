@@ -10,27 +10,12 @@ import asyncio
 
 import aiocoap.defaults
 
-if os.environ.get("AIOCOAP_TESTS_LOOP", None) == "uvloop":
-    import asyncio
-    import uvloop
-
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-elif os.environ.get("AIOCOAP_TESTS_LOOP", None) == "gbulb":
-    import gbulb
-
-    gbulb.install()
-elif os.environ.get("AIOCOAP_TESTS_LOOP", None) == "glib":
-    from gi.events import GLibEventLoopPolicy
-
-    policy = GLibEventLoopPolicy()
-    asyncio.set_event_loop_policy(policy)
-
 # All test servers are bound to loopback; if for any reason one'd want to run
 # with particular transports, just set them explicitly.
 os.environ["AIOCOAP_DTLSSERVER_ENABLED"] = "1"
 
 if "coverage" in sys.modules:
-    PYTHON_PREFIX = [sys.executable, "-m", "coverage", "run", "--parallel-mode"]
+    PYTHON_PREFIX = [sys.executable, "-m", "coverage", "run"]
 else:
     PYTHON_PREFIX = [sys.executable]
 
@@ -73,7 +58,7 @@ def _find_loopbacknames():
             # name), that would come up empty when no route is availasble.
             #
             # (An alternative here would be to query V6 in the first place,
-            # check `all` instead of `any` againt com and before appending do
+            # check `all` instead of `any` against com and before appending do
             # another check on whether it still returns something to an
             # unspecified query)
             results = socket.getaddrinfo(c, 1234)
@@ -102,6 +87,13 @@ tcp_disabled = "tcp" not in os.environ.get("AIOCOAP_SERVER_TRANSPORT", "tcp is d
 ws_disabled = "ws" not in os.environ.get("AIOCOAP_SERVER_TRANSPORT", "ws is default")
 dtls_disabled = "dtls" not in os.environ.get(
     "AIOCOAP_SERVER_TRANSPORT", "dtls is default"
+)
+
+# This is relevant when some tests don't quite work with woodpecker's network
+# setup; use this sparingly.
+in_woodpecker = (
+    os.environ.get("__TOX_ENVIRONMENT_VARIABLE_ORIGINAL_CI") == "woodpecker"
+    or os.environ.get("CI") == "woodpecker"
 )
 
 
@@ -133,6 +125,35 @@ class CapturingSubprocess(asyncio.SubprocessProtocol):
 
     def process_exited(self):
         self.read_more.set_result(None)
+
+
+def run_fixture_as_standalone_server(fixture):
+    import sys
+    import logging
+
+    if "-v" in sys.argv:
+        logging.basicConfig()
+        logging.getLogger("coap").setLevel(logging.DEBUG)
+        logging.getLogger("coap-server").setLevel(logging.DEBUG)
+
+    print("Running test server")
+
+    async def run():
+        s = fixture()
+
+        s._outcome = type("OutcomeHack", (), {})
+        s._outcome.success = True
+
+        await s.asyncSetUp()
+        try:
+            await asyncio.Future()
+        finally:
+            await s.asyncTearDown()
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

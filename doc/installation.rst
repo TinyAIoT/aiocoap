@@ -54,7 +54,7 @@ With the ``-e`` option, that is also a viable option if you want to modify
 aiocoap and pip's `choice of checkout directories`_ is suitable for you.
 
 .. _`Python package index`: https://pypi.python.org/pypi/aiocoap/
-.. _`choice of checkout directories`: https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support
+.. _`choice of checkout directories`: https://pip.pypa.io/en/stable/topics/vcs-support/#editable-vcs-installs
 
 Common errors
 -------------
@@ -63,14 +63,14 @@ When upstream libraries change, or when dependencies of used libraries are not
 there (eg. no C compiler, C libraries missing), the installation process can fail.
 
 On Debian based systems, it helps to install the packages ``python3-dev``,
-``build-essential`` and ``autoconf``; generally, the error output will contain
-some hints as to what is missing.
+``build-essential``, ``autoconf`` and ``automake``; generally, the error output will
+contain some hints as to what is missing.
 
 As a workaround, it can be helpful to not install with all extras, but replace the
 ``all`` with the extras you actually want from the list below. For example, if
 you see errors from DTLSSocket, rather than installing with ``[all,docs]``, you
 can leave out the ``tinydtls`` extra and install with
-``[linkheader,oscore,prettyprint,docs]``.
+``[oscore,prettyprint,docs]``.
 
 Slimmer installations
 ---------------------
@@ -91,7 +91,7 @@ The extras currently supported are:
 * ``ws``: Required for using CoAP over WebSockets.
 
 * ``prettyprint``: Allows using the ``--color`` and ``--pretty-print`` options
-  of :doc:`module/aiocoap.cli.client`.
+  of :doc:`module/aiocoap.cli.client` or fancy HTML output.
 
 * ``docs``: Installs tools needed to build the documentation (not part of
   ``all``).
@@ -101,7 +101,7 @@ The extras currently supported are:
   contain any external dependencies, but was left in place for compatibility.
 
 Which libraries and versions are pulled in by this exactly is documented in the
-``setup.py`` file.
+``pyproject.toml`` file.
 
 .. _RFC6690: https://tools.ietf.org/html/rfc6690
 
@@ -118,25 +118,39 @@ When using pyodide (either directly or through a `Jupyter notebook`_),
 Installation is then done directly in the Python environment using::
 
     >>> import micropip
-    >>> await micropip.install("aiocoap[prettyprint,oscore]")
+    >>> await micropip.install("aiocoap[all]")
 
 See the :doc:`pyodide` section of the documentation on how aiocoap can be used there.
 
 .. _pyodide: https://pyodide.org/
-.. _`Jupyter notebook`: https://jupyter.org/try-jupyter/
+.. _`Jupyter notebook`: https://jupyterlite-pyodide-kernel.readthedocs.io/en/latest/_static/lab/
+..
+   not using the more prominent
+   .. _`Jupyter notebook`: https://jupyter.org/try-jupyter/
+   (here and in other places around the docs)
+   because that's still on pyodide 0.27 with ABI 2024
 
-Manual version selection
-~~~~~~~~~~~~~~~~~~~~~~~~
+Using unreleased versions on pyodide
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The latest main version is made available as part of the documentation, coverage and test builds,
+The latest main version is made available through aiocoap's CI runs,
 and can be used like this::
 
     >>> import micropip
-    >>> await micropip.install("https://raw.codeberg.page/aiocoap/aiocoap/@pages/dist/aiocoap-0.4.12.post0-py3-none-any.whl")
+    >>> await micropip.install(
+    ...     "aiocoap[all]",
+    ...     index_urls=["https://coap.amsuess.com", "PYPI"]
+    ... )
 
-Note that the file name is parsed by micropip,
-and therefore needs to change as versions change.
-The latest link is found on <https://aiocoap.codeberg.page/aiocoap/>.
+That index not only contains the latest aiocoap versions,
+but also a suitable version of the lakers-python dependency.
+(Generally, that is package is regularly updated in pyodide,
+but the notebook may not be using the latest pyodide yet).
+
+..
+    It's not going through Codeberg pages because that can do correct
+    Content-Format (on regular pages) or CORS (on raw.codeberg.page), but
+    micropip needs both at the same time.
 
 To test a local build with pyodide,
 get a Git checkout as described for development above, and run::
@@ -145,7 +159,9 @@ get a Git checkout as described for development above, and run::
 
 Then, copy the newly created file ``dist/aiocoap-${VERSION}-py3-none-any.whl``
 to a file server on the public web.
+Do not rename the file, as it is parsed by micropip.
 Note that the server may need some CORS_ setup to allow loading of the file from foreign web sites.
-For that reason, running the ``http.server`` module as a web server on localhost creates an insufficient server.
+For that reason, running the ``http.server`` module as a web server on localhost creates an insufficient server
+(unless pyodide is also served from the same host).
 
 .. _CORS: https://en.wikipedia.org/wiki/Cross-origin_resource_sharing

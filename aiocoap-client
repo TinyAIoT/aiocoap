@@ -3,10 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""This script can be used to access the aiocoap command line client when
-setup.py is not used to create an entry point for it (eg. when running from the
-source directory)."""
+"""This script can be used to access the aiocoap command line client when its
+entry points have not been installed (eg. when running from the source
+directory)."""
 
 import aiocoap.cli.client
 
+# When changing this, beware that the projects.scripts entry points need to be
+# changed as well.
 aiocoap.cli.client.sync_main()

@@ -6,14 +6,13 @@ import asyncio
 import aiocoap
 import errno
 
-from .test_server import WithTestServer, WithClient, no_warnings, asynctest
+from .test_server import WithTestServer, WithClient, no_warnings
 
 
 class TestClientWithSetHost(WithTestServer, WithClient):
     set_uri_host = True
 
     @no_warnings
-    @asynctest
     async def test_uri_parser(self):
         request = aiocoap.Message(code=aiocoap.GET)
         request_uri = "coap://" + self.servernetloc + "/empty?query=a&query=b"
@@ -53,9 +52,7 @@ class TestClientWithSetHost(WithTestServer, WithClient):
         else:
             # The simple6 transport misreports remotes to which a socket was
             # opened with a name.
-            if "simple6" not in list(
-                aiocoap.defaults.get_default_clienttransports(loop=self.loop)
-            ):
+            if "simple6" not in list(aiocoap.defaults.get_default_clienttransports()):
                 self.assertEqual(
                     response.get_request_uri(),
                     "coap://" + self.servernetloc + "/empty",
@@ -63,7 +60,6 @@ class TestClientWithSetHost(WithTestServer, WithClient):
                 )
 
     @no_warnings
-    @asynctest
     async def test_uri_parser2(self):
         """A difficult test because it is prone to keeping the transport
         around, bothering later tests"""
@@ -104,16 +100,14 @@ class TestClientWithHostlessMessages(TestClientWithSetHost):
 
 class TestClientOther(WithTestServer, WithClient):
     @no_warnings
-    # can't do @asynctest because of assertRaises
-    def test_raising(self):
+    async def test_raising(self):
         """This test obtains results via the response_raising property of a
         Request."""
-        yieldfrom = self.loop.run_until_complete
 
         request = aiocoap.Message(
             code=aiocoap.GET, uri="coap://" + self.servernetloc + "/empty"
         )
-        response = yieldfrom(self.client.request(request).response_raising)
+        response = await self.client.request(request).response_raising
         self.assertEqual(
             response.code,
             aiocoap.CONTENT,
@@ -125,14 +119,10 @@ class TestClientOther(WithTestServer, WithClient):
         )
         ## @FIXME i'd like to assertRaises(NotFound), see docstring of
         # :class:`ResponseWrappingError`
-        self.assertRaises(
-            aiocoap.error.ResponseWrappingError,
-            yieldfrom,
-            self.client.request(request).response_raising,
-        )
+        with self.assertRaises(aiocoap.error.ResponseWrappingError):
+            await self.client.request(request).response_raising
 
     @no_warnings
-    @asynctest
     async def test_nonraising(self):
         """This test obtains results via the response_nonraising property of a
         Request."""
@@ -147,13 +137,12 @@ class TestClientOther(WithTestServer, WithClient):
         )
 
         request = aiocoap.Message(
-            code=aiocoap.GET, uri="coap://cant.resolve.this.example./empty"
+            code=aiocoap.GET, uri="coap://can.not.resolve.this.example./empty"
         )
         response = await self.client.request(request).response_nonraising
         self.assertEqual(response.code, aiocoap.INTERNAL_SERVER_ERROR)
 
     @no_warnings
-    @asynctest
     async def test_freeoncancel(self):
         # As there's no programmatic feedback about what actually gets sent,
         # looking at the logs is the easiest option, even though it will
@@ -162,7 +151,7 @@ class TestClientOther(WithTestServer, WithClient):
         # FIXME Currently, this *only* checks for whether later responses are
         # rejected, it does *not* check for whether the response runner is
         # freed as well (primarily because that'd need _del_to_be_sure to be
-        # useable in an async context).
+        # usable in an async context).
 
         # With immediate cancellation, nothing is sent. Note that we don't
         # ensure this per documentation, but still it's good to see when this
@@ -182,12 +171,11 @@ class TestClientOther(WithTestServer, WithClient):
 
         # FIXME: What is slightly weird here is that on uvloop, something
         # *does* get sent -- but it appears that that happens even after the
-        # cancellation. That behavior oly gets apparent when test_freeoncancel
+        # cancellation. That behavior only gets apparent when test_freeoncancel
         # and test_freeoncancel_non were run in a single test, because then the
         # ACK Content from the prior test also got counted.
 
     @no_warnings
-    @asynctest
     async def test_freeoncancel_non(self):
         # With a NON, the response should take long. (Not trying to race the
         # "I'm taking too long"-ACK by making the sleep short enough).
@@ -197,7 +185,7 @@ class TestClientOther(WithTestServer, WithClient):
         request = aiocoap.Message(
             code=aiocoap.GET,
             uri="coap://" + self.servernetloc + "/slow",
-            mtype=aiocoap.NON,
+            transport_tuning=aiocoap.Unreliable,
         )
         self.resp = self.client.request(request).response
         # Wait for the request to actually be sent

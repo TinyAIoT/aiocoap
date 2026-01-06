@@ -23,7 +23,7 @@ from aiocoap.numbers.codes import *
 from aiocoap.util import hostportjoin
 
 from .common import PYTHON_PREFIX, CapturingSubprocess
-from .test_server import WithAsyncLoop, WithClient, asynctest
+from .test_server import WithClient
 
 SERVER_NETLOC = hostportjoin("::1", None)
 AIOCOAP_FILESERVER = PYTHON_PREFIX + [
@@ -39,20 +39,22 @@ AIOCOAP_FILESERVER = PYTHON_PREFIX + [
     "Module missing for running fileserver tests: %s"
     % (aiocoap.defaults.linkheader_missing_modules(),),
 )
-class WithFileServer(WithAsyncLoop):
-    def setUp(self):
-        super().setUp()
-        ready = self.loop.create_future()
-        self.__done = self.loop.create_future()
+class WithFileServer(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
+        ready = asyncio.get_event_loop().create_future()
+        self.__done = asyncio.get_event_loop().create_future()
 
         self.filedir = tempfile.mkdtemp(suffix="-fileserver")
 
-        self.__task = self.loop.create_task(self.run_server(ready, self.__done))
-        self.loop.run_until_complete(ready)
+        self.__task = asyncio.get_event_loop().create_task(
+            self.run_server(ready, self.__done)
+        )
+        await ready
 
     # This might be overly complex; it was stripped down from the more intricate OSCORE plug tests
     async def run_server(self, readiness, done):
-        self.process, process_outputs = await self.loop.subprocess_exec(
+        self.process, process_outputs = await asyncio.get_event_loop().subprocess_exec(
             CapturingSubprocess,
             *(AIOCOAP_FILESERVER + ["-vvvvvvvv"]),
             self.filedir,
@@ -91,7 +93,7 @@ class WithFileServer(WithAsyncLoop):
 
         self.process.close()
 
-    def tearDown(self):
+    async def asyncTearDown(self):
         # Don't leave this over, even if anything is raised during teardown
         self.process.terminate()
 
@@ -100,11 +102,10 @@ class WithFileServer(WithAsyncLoop):
 
         super().tearDown()
 
-        code, out, err = self.loop.run_until_complete(self.__done)
+        code, out, err = await self.__done
 
 
 class TestFileServer(WithFileServer, WithClient):
-    @asynctest
     async def test_fullcycle(self):
         await work_fileserver(
             self.client, "coap://%s/" % SERVER_NETLOC, self.assertTrue
@@ -125,7 +126,7 @@ async def work_fileserver(ctx, base_uri, assert_):
     assert_(res.opt.content_format == 40, "Directory listing is not in link-format")
     assert_(res.payload == b"", "Directory is initially not empty")
 
-    file1_body = b"Hello World\n" * 100
+    file1_body = b"Hello World\n" * 200
     req = Message(code=PUT, uri=base_uri + "file", payload=file1_body)
     res = await ctx.request(req).response_raising
     assert_(res.code == CHANGED)
@@ -149,7 +150,7 @@ async def work_fileserver(ctx, base_uri, assert_):
     assert_(not res.payload)
     assert_(res.opt.etag == etag1)
 
-    file2_body = b"It is diffrent now."
+    file2_body = b"It is different now."
     req = Message(
         code=PUT, uri=base_uri + "file", payload=file2_body, if_none_match=True
     )
@@ -172,7 +173,12 @@ async def work_fileserver(ctx, base_uri, assert_):
     res = await ctx.request(req).response_raising
     assert_(res.code == CHANGED)
 
-    req = Message(code=GET, uri=base_uri + "file")
+    # Empty ETag is actually illegal, but the workaround to force the server to
+    # send one is even cruder, see
+    # https://github.com/core-wg/corrclar/issues/46
+    #
+    # This is not needed with the original body because that is blockwise'd.
+    req = Message(code=GET, uri=base_uri + "file", etag=b"")
     res = await ctx.request(req).response_raising
     assert_(res.code == CONTENT)
     assert_(res.payload == file2_body)

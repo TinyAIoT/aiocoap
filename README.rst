@@ -2,8 +2,11 @@
   :copyright: SPDX-FileCopyrightText: Christian Amsüss and the aiocoap contributors
   :copyright: SPDX-License-Identifier: MIT
 
-aiocoap -- The Python CoAP library
-==================================
+|documentation| |git sources on codeberg| |on PyPI| |CI status| |coverage report| |following OpenSSF Best Practices|
+
+
+aiocoap – The Python CoAP library
+=================================
 
 The aiocoap package is an implementation of CoAP, the `Constrained Application
 Protocol`_. It facilitates writing applications that talk to
@@ -76,8 +79,8 @@ the list or in the excluded items, file a wishlist item at the same location).
 Dependencies
 ------------
 
-Basic aiocoap works out of the box on Python_ 3.10 or newer (also works on
-PyPy3_). For full support (DTLS, OSCORE and link-format handling) follow the
+Basic aiocoap works out of the box on Python_ 3.11 or newer (also works on
+PyPy3_). For full support (eg. DTLS, OSCORE and pretty-printing) follow the
 installation_ instructions as these require additional libraries.
 
 aiocoap provides different network backends for different platforms. The most
@@ -103,7 +106,7 @@ working on larger changes, please coordinate on the issue tracker.
 
 Security critical bugs may instead be reported in private to <chrysn@fsfe.org>
 (`PGP key`_) for coordinated disclosure; the maintainer reserves the right to
-publish fixes ahead of a planned embargo time at he deems suitable.
+publish fixes ahead of a planned embargo time as he deems suitable.
 
 Documentation is built using sphinx_ with ``python3 -m sphinx doc/ ${TARGET}``;
 hacks used there are described in ``./doc/README.doc``.
@@ -146,8 +149,7 @@ Licensing
 aiocoap is published under the MIT License, and follows the best practice of `reuse.software`_.
 Files in ``aiocoap/util/vendored/`` may have different (but compatible and OSI approved) licenses.
 
-When using aiocoap for a publication, please cite it according to the output of
-``./setup.py cite [--bibtex]``.
+When using aiocoap for a publication, please cite it according to `CITATION.cff`_.
 
 Copyright Christian Amsüss and the aiocoap contributors.
 
@@ -156,9 +158,36 @@ The full list of aiocoap contributors can be obtained from the version control h
 
 .. Any filtering by a mailmap would apply, but no need to state that unless we do get a mailmap.
 
+.. Links:
+
 .. _guidedtour: http://aiocoap.readthedocs.io/en/latest/guidedtour.html
 .. _examples: http://aiocoap.readthedocs.io/en/latest/examples.html
 .. _tools: http://aiocoap.readthedocs.io/en/latest/tools.html
 .. _installation: http://aiocoap.readthedocs.io/en/latest/installation.html
 .. _reuse.software: https://reuse.software/
 .. _txThings: https://github.com/siskin/txThings
+.. _`CITATION.cff`: https://codeberg.org/aiocoap/aiocoap/src/branch/main/CITATION.cff
+
+.. Badges:
+
+.. |documentation| image:: https://app.readthedocs.org/projects/aiocoap/badge/?version=latest
+   :target: https://aiocoap.readthedocs.io/
+
+.. |git sources on codeberg| image:: https://badgen.net/static/git/on%20codeberg
+   :target: https://codeberg.org/aiocoap/aiocoap/
+
+.. |on PyPI| image:: https://badgen.net/pypi/v/aiocoap
+   :target: https://pypi.org/project/aiocoap/
+
+.. The "?" at the end keeps the HTML renderer from recognizing it as an SVG, in
+   which case it'd turn it into an <object>, which doesn't work on that site
+   because of X-Frame-Options sent there.
+
+.. |CI status| image:: https://ci.codeberg.org/api/badges/12879/status.svg?
+   :target: https://ci.codeberg.org/repos/12879
+
+.. |coverage report| image:: https://aiocoap.codeberg.page/aiocoap/badges/coverage.svg?
+   :target: https://aiocoap.codeberg.page/aiocoap/coverage/
+
+.. |following OpenSSF Best Practices| image:: https://www.bestpractices.dev/projects/10010/badge
+   :target: https://www.bestpractices.dev/en/projects/10010

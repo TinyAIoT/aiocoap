@@ -20,7 +20,7 @@ integration in a bigger project in general.
    aiocoap-fileserver: A simple read-only file server with directory listings <module/aiocoap.cli.fileserver>
    aiocoap-keygen: A tool for generating keys for EDHOC <module/aiocoap.cli.keygen>
 
-Those utilities are installed by `setup.py` at the usual executable locations;
+Those utilities are installed along with the library at the usual executable locations;
 during development or when working from a git checkout of the project, wrapper
 scripts are available in the root directory. In some instances, it might be
 practical to access their functionality from within Python; see the
@@ -32,7 +32,7 @@ the ``--help`` option.
 contrib
 -------
 
-Tools in the ``contrib/`` folder are somewhere inbetween :doc:`examples` and
+Tools in the ``contrib/`` folder are somewhere between :doc:`examples` and
 the tools above; the rough idea is that they should be generally useful but not
 necessarily production tools, and simple enough to be useful as an inspiration
 for writing other tools; none of this is set in stone, though, so that area can
@@ -46,7 +46,7 @@ These tools are currently present:
   and additionally serve as a playground for a more suitable Resource
   implementation.
 
-  The GUI is implemented in Gtk3 using the gbulb_ asyncio loop.
+  The GUI is implemented in Gtk3 using the gobject_ asyncio loop.
 
 * ``aiocoap-kivy-widget``: A similar (and smaller) widget implemented in Kivy_.
 
@@ -59,12 +59,8 @@ These tools are currently present:
   discovered during a Resource Directory discovery process, but does not serve
   as the full resource directory itself and redirects the client there.
 
-* ``*.ipynb``: Jupyter notebooks
-  in which aiocoap is run in a web browser
-  and accesses the larger network through WebSockets.
+* ``*.ipynb``: Jupyter notebooks;
+  see :ref:`the contrib section of aiocoap's pyodide documentation <contrib-pyodide>`.
 
-  These files can be uploaded to `a live version of Jupyter Lite`_.
-
-.. _gbulb: https://github.com/nathan-hoad/gbulb
+.. _gobject: https://pygobject.gnome.org/guide/asynchronous.html
 .. _Kivy: https://kivy.org/
-.. _`a live version of Jupyter Lite`: https://jupyter.org/try-jupyter/lab/
